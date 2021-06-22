@@ -1,0 +1,1014 @@
+openapi: 3.0.0
+info:
+  title: CompSoc Webservices API
+  description: This API is used by a React frontend and webservices that require access
+    to backend services such as container/vm and LDAP management
+  version: 1.0.0
+servers:
+- url: https://localhost:8080/v1
+  description: Local Testing CompSoc Dashboard API
+- url: https://api.compsoc.ie/v1
+  description: Production CompSoc Dashboard API
+- url: https://api.staging.compsoc.ie/v1
+  description: Staging CompSoc Dashboard API
+- url: https://virtserver.swaggerhub.com/nuigcompsoc/CompSoc-Webservices-API/1.0.0
+  description: SwaggerHub API Auto Mocking
+paths:
+  /users:
+    get:
+      tags:
+      - users
+      summary: List users
+      operationId: getUsers
+      responses:
+        "200":
+          description: An array of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+                x-content-type: application/json
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt_admin: []
+    post:
+      tags:
+      - users
+      summary: Create a new user
+      description: "Upon request a request will be made to the societies website to\
+        \ verify the member ID is in our membership.\nA verification email will be\
+        \ sent to the email address in the societies database with a verification\
+        \ token,\nthis token can be used to create the account.\n"
+      operationId: createUser
+      requestBody:
+        description: User to create
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body'
+        required: true
+      responses:
+        "201":
+          description: New user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: Validation error (e.g. Required field missing)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: "(e.g. VM already running, User exists)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - {}
+      - jwt_admin: []
+  /users/{username}:
+    get:
+      tags:
+      - users
+      summary: Get a user by their username
+      description: |
+        A valid admin JWT is required to retrieve a user other than `self`.
+      operationId: getUser
+      parameters:
+      - name: username
+        in: path
+        description: |
+          User's username. Can be `self` to indicate the currently authenticated user.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/PathParameter'
+        example: MoeLovesDuff
+      responses:
+        "200":
+          description: Requested user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource does not exist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt: []
+      - jwt_admin: []
+    delete:
+      tags:
+      - users
+      summary: Delete a user by their username
+      description: |
+        A valid admin JWT is required to delete a user other than `self`.
+      operationId: deleteUser
+      parameters:
+      - name: username
+        in: path
+        description: |
+          User's username. Can be `self` to indicate the currently authenticated user.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/PathParameter'
+        example: MoeLovesDuff
+      responses:
+        "200":
+          description: Deleted user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource does not exist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt: []
+      - jwt_admin: []
+    patch:
+      tags:
+      - users
+      summary: Update a user by their username
+      description: "Requires at least a user JWT. A valid admin JWT is required to\
+        \ update admin-only\nfields and modify a user other than `self`.\n\nAn email\
+        \ will be sent to the user about their changes. If the email address is\n\
+        changed, an email will be sent to the old and new address.\n"
+      operationId: updateUser
+      parameters:
+      - name: username
+        in: path
+        description: |
+          User's username. Can be `self` to indicate the currently authenticated user.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/PathParameter'
+        example: MoeLovesDuff
+      requestBody:
+        description: Partial user containing fields to update
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            examples:
+              profile:
+                summary: User self-profile update
+                value:
+                  lastName: ASurnameThatIsntMoesLastName
+              admin:
+                summary: Admin-only
+                value:
+                  isAdmin: true
+        required: true
+      responses:
+        "200":
+          description: User with un-updated values
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: Validation error (e.g. Required field missing)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource does not exist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: "(e.g. VM already running, User exists)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt: []
+      - jwt_admin: []
+  /societies:
+    get:
+      tags:
+      - societies
+      summary: List societies
+      operationId: getSocieties
+      responses:
+        "200":
+          description: An array of societies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Society'
+                x-content-type: application/json
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt_admin: []
+  /societies/{username}:
+    get:
+      tags:
+      - societies
+      summary: Get a society by their Username
+      description: |
+        Requires at least an expired society JWT. A valid admin JWT is required to retrieve a society other than `self`.
+      operationId: getSociety
+      parameters:
+      - name: username
+        in: path
+        description: |
+          User's username. Can be `self` to indicate the currently authenticated user.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/PathParameter'
+        example: MoeLovesDuff
+      responses:
+        "200":
+          description: Requested society
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Society'
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource does not exist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt: []
+      - jwt_admin: []
+    delete:
+      tags:
+      - societies
+      summary: Delete a society by their username
+      description: |
+        Requires at least an expired society JWT. A valid admin JWT is required to delete a society other than `self`.
+      operationId: deleteSociety
+      parameters:
+      - name: username
+        in: path
+        description: |
+          User's username. Can be `self` to indicate the currently authenticated user.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/PathParameter'
+        example: MoeLovesDuff
+      responses:
+        "200":
+          description: Deleted society
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Society'
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource does not exist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt: []
+      - jwt_admin: []
+  /auth:
+    get:
+      tags:
+      - auth
+      summary: Lists all login providers
+      operationId: listProviders
+      responses:
+        "200":
+          description: An array of providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Provider'
+                x-content-type: application/json
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/register:
+    post:
+      tags:
+      - auth
+      summary: Create a new user
+      description: "Upon request a request will be made to the societies website to\
+        \ verify the member ID is in our membership.\nA verification email will be\
+        \ sent to the email address in the societies database with a verification\
+        \ token,\nthis token can be used to create the account.\n"
+      operationId: registerUser
+      requestBody:
+        description: User to create
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_1'
+        required: true
+      responses:
+        "201":
+          description: New user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: Validation error (e.g. Required field missing)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: "Authorisation error (e.g. invalid token, token expired etc.)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Admin token is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: "(e.g. VM already running, User exists)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - {}
+      - jwt_admin: []
+  /auth/register/{verifyToken}:
+    get:
+      tags:
+      - auth
+      summary: Verify CompSoc account
+      description: Verifies/creates account for member
+      operationId: verifyUser
+      parameters:
+      - name: verifyToken
+        in: path
+        description: short-lived token sent to user's email is verified at this endpoint
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "307":
+          description: "Successful verify, redirect to dash logged in"
+          headers:
+            Location:
+              description: Redirect URL
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: https://dash.compsoc.ie
+        "400":
+          description: Validation error (e.g. Required field missing)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource does not exist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/register/alumni:
+    post:
+      tags:
+      - auth
+      summary: Convert Student/Staff account to Alumni account
+      description: Allows for user to change email and change account type of Alumni
+      operationId: registerAlumni
+      requestBody:
+        description: Required POST variables
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_2'
+        required: true
+      responses:
+        "200":
+          description: Account changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "400":
+          description: Validation error (e.g. Required field missing)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: "(e.g. VM already running, User exists)"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - jwt: []
+  /auth/ldap:
+    post:
+      tags:
+      - auth
+      summary: Log in via LDAP
+      operationId: loginLdap
+      requestBody:
+        description: Required POST variables
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_3'
+        required: true
+      responses:
+        "307":
+          description: Sign in worked (redirected with error get variable should there
+            be one)
+          headers:
+            Location:
+              description: Redirect URL
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: https://dash.compsoc.ie
+  /auth/openid:
+    get:
+      tags:
+      - auth
+      summary: Redirect to CompSoc SSO
+      operationId: loginOidc
+      responses:
+        "307":
+          description: Redirect to CompSoc SSO
+          headers:
+            Location:
+              description: Redirect URL
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: https://sso.compsoc.ie/auth/realms/base/protocol/openid-connect/auth?client_id=MoesApp&scope=openid
+                  profile&redirect_uri=https%3A%2F%2Fapi.compsoc.ie%2Fv%2Fauth%2Fopenid%2Fcallback&response_type=code
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/google:
+    get:
+      tags:
+      - auth
+      summary: Redirect to Societies Google SSO
+      operationId: loginGoogle
+      responses:
+        "307":
+          description: Redirect to Societies Google SSO
+          headers:
+            Location:
+              description: Redirect URL
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https%3A%2F%2Fdevelopers.google.com%2Foauthplayground&prompt=consent&response_type=code&client_id=407408718192.apps.googleusercontent.com&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&access_type=offline
+        "500":
+          description: General server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/{provider}/callback:
+    get:
+      tags:
+      - auth
+      summary: Callback from Google SSO
+      operationId: loginCallback
+      parameters:
+      - name: provider
+        in: path
+        description: Provider name e.g. openid / google
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: code
+        in: query
+        description: code used to send back up to get id token
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "307":
+          description: Sign in worked (redirected with error get variable should there
+            be one)
+          headers:
+            Location:
+              description: Redirect URL
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: https://dash.compsoc.ie
+  /brew:
+    get:
+      tags:
+      - misc
+      summary: Ask the server to brew coffee
+      description: "The server will respond with JSON object, in the message attribute,\
+        \ it will tell you if it will brew coffee for you"
+      operationId: brew
+      responses:
+        "418":
+          description: Default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_418'
+  /ping:
+    get:
+      tags:
+      - misc
+      summary: Server heartbeat operation
+      description: Server will pong back or not pong at all
+      operationId: ping
+      responses:
+        "200":
+          description: Default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+components:
+  schemas:
+    PathParameter:
+      pattern: ":([^\\/]+)"
+      type: string
+      description: Make path parameters follow this regex
+    Error:
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message explaining the error
+    Provider:
+      required:
+      - authURL
+      - authURLMethod
+      type: object
+      properties:
+        authURL:
+          type: string
+          description: Login URL
+          example: https://sso.compsoc.ie/auth/realms/base/protocol/openid-connect/auth?client_id=MoesApp&scope=openid
+            profile&redirect_uri=https%3A%2F%2Fapi.compsoc.ie%2Fv%2Fauth%2Fopenid%2Fcallback&response_type=code
+        authURLMethod:
+          type: string
+          description: Method for auth URL
+          example: Redirect
+      example:
+        authURL: https://sso.compsoc.ie/auth/realms/base/protocol/openid-connect/auth?client_id=MoesApp&scope=openid
+          profile&redirect_uri=https%3A%2F%2Fapi.compsoc.ie%2Fv%2Fauth%2Fopenid%2Fcallback&response_type=code
+        authURLMethod: Redirect
+    Society:
+      required:
+      - email
+      - firstName
+      - lastName
+      - username
+      type: object
+      properties:
+        username:
+          type: string
+          description: Unique username (must be a valid DNS name)
+          example: Computer Society
+        firstName:
+          type: string
+          example: Computer
+        lastName:
+          type: string
+          example: Society
+        email:
+          type: string
+          description: Unique email address
+          example: compsoc@uni.ie
+      example:
+        firstName: Computer
+        lastName: Society
+        email: compsoc@uni.ie
+        username: Computer Society
+    User:
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+      - username
+      type: object
+      properties:
+        id:
+          type: string
+          description: Student/Staff number
+          example: "16969420"
+        username:
+          type: string
+          description: Unique username (must be a valid DNS name)
+          example: MoeLovesDuff
+        firstName:
+          type: string
+          example: Moe
+        lastName:
+          type: string
+          example: Szyslak
+        email:
+          type: string
+          description: Unique email address
+          example: m.szyslak1@nuigalway.ie
+        isCommittee:
+          type: boolean
+          description: True if in committee group
+          example: false
+        isAdmin:
+          type: boolean
+          description: True if in admin group
+          example: false
+        sshKey:
+          pattern: "^(ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384\
+            \ AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519\
+            \ AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+/]+[=]{0,3}(\
+            \ .*)?$"
+          type: string
+          description: SSH public key
+          nullable: true
+          example: |
+            ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+kCHXqtznkT9IBN5WxZHmXI97k3BumT+N4lyHWMo0pykpACCOcGw52EXxQveNqgcwcRUgamL9A2JTE//WRf3O4nBofeTRNKcRxTjRoUVIt/F0xbf09yWBqJOXZ8rqLkXhRvSpr1TCUZtYVp5iLtpERp622OMIqHSwa6HlxBqsCFkBeq1bRyNtYK/IaQAuBPW9MNeFriGqA0Vq078ccXp+JINxJbr+ZJybVg6PVqnMD+PgGMZQLkoWjwjH3vcJZZt584UPtrXKpNZuKy6dcMCb2U+O9NOaO66168sBVuK0kZHh51nJ7ZH38VLGiBipRgIQ1fzic3Ncn6GC9ko3/OwT moe@moes
+      example:
+        firstName: Moe
+        lastName: Szyslak
+        sshKey: |
+          ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+kCHXqtznkT9IBN5WxZHmXI97k3BumT+N4lyHWMo0pykpACCOcGw52EXxQveNqgcwcRUgamL9A2JTE//WRf3O4nBofeTRNKcRxTjRoUVIt/F0xbf09yWBqJOXZ8rqLkXhRvSpr1TCUZtYVp5iLtpERp622OMIqHSwa6HlxBqsCFkBeq1bRyNtYK/IaQAuBPW9MNeFriGqA0Vq078ccXp+JINxJbr+ZJybVg6PVqnMD+PgGMZQLkoWjwjH3vcJZZt584UPtrXKpNZuKy6dcMCb2U+O9NOaO66168sBVuK0kZHh51nJ7ZH38VLGiBipRgIQ1fzic3Ncn6GC9ko3/OwT moe@moes
+        id: "16969420"
+        isAdmin: false
+        email: m.szyslak1@nuigalway.ie
+        username: MoeLovesDuff
+        isCommittee: false
+    body:
+      required:
+      - id
+      - username
+      type: object
+      properties:
+        id:
+          type: string
+          description: Student/Staff number
+          example: "16969420"
+        username:
+          type: string
+          description: Unique username (must be a valid DNS name)
+          example: MoeLovesDuff
+        isCommittee:
+          type: boolean
+          description: True if in committee group
+          example: false
+        isAdmin:
+          type: boolean
+          description: True if in admin group
+          example: false
+    body_1:
+      required:
+      - id
+      - username
+      type: object
+      properties:
+        id:
+          type: string
+          description: Student/Staff number
+          example: "16969420"
+        username:
+          type: string
+          description: Unique username (must be a valid DNS name)
+          example: MoeLovesDuff
+        isCommittee:
+          type: boolean
+          description: True if in committee group
+          example: false
+        isAdmin:
+          type: boolean
+          description: True if in admin group
+          example: false
+    body_2:
+      required:
+      - email
+      type: object
+      properties:
+        email:
+          pattern: "^(?=^((?!@nuigalway.ie).)*$)(?=.*\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\
+            .[a-zA-Z]{2,6}\\b$).*$"
+          type: string
+          description: "Check isn't a nuigalway address, accept any other email"
+          example: MoeLovesDuff
+    inline_response_200:
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          type: string
+          example: Account changed successfully to type Alumni
+      example:
+        message: Account changed successfully to type Alumni
+    body_3:
+      required:
+      - email
+      - password
+      - username
+      type: object
+      properties:
+        email:
+          type: string
+          description: Unique email address
+          example: MoeLovesDuff@email.com
+        username:
+          type: string
+          description: Unique username (must be a valid DNS name)
+          example: MoeLovesDuff
+        password:
+          type: string
+          description: User password
+          example: JimLovesRashers12*
+    inline_response_418:
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          type: string
+          example: "I refuse to brew coffee because I am, permanently, a teapot."
+    inline_response_200_1:
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          type: string
+          example: Pong!
+      example:
+        message: Pong!
+  responses:
+    InternalError:
+      description: General server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFoundError:
+      description: Resource does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Validation error (e.g. Required field missing)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConflictError:
+      description: "(e.g. VM already running, User exists)"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    AuthError:
+      description: "Authorisation error (e.g. invalid token, token expired etc.)"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    AdminError:
+      description: Admin token is required
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    UsernameOrSelf:
+      name: username
+      in: path
+      description: |
+        User's username. Can be `self` to indicate the currently authenticated user.
+      required: true
+      style: simple
+      explode: false
+      schema:
+        $ref: '#/components/schemas/PathParameter'
+      example: MoeLovesDuff
+  securitySchemes:
+    jwt:
+      type: http
+      description: Any user JWT (including non-admin)
+      scheme: bearer
+      bearerFormat: jwt
+    jwt_admin:
+      type: http
+      description: Valid admin JWT
+      scheme: bearer
+      bearerFormat: jwt
