@@ -78,8 +78,9 @@ func LoadRSAKey(c *config.Config) (*rsa.PrivateKey, bool) {
 func GenerateAPIToken(c *config.Config, claims jwt.MapClaims) (string, bool) {
 	claims["aud"] = c.FormHomeURL()
 	claims["iss"] = c.FormHomeURL()
-	isAdmin, ok := ldap.CheckUserIsAdmin(c, claims["uid"].(string))
-	isCommittee, ok := ldap.CheckUserIsCommittee(c, claims["uid"].(string))
+	l := ldap.NewClient(c)
+	isAdmin, ok := l.CheckUserIsAdmin(claims["uid"].(string))
+	isCommittee, ok := l.CheckUserIsCommittee(claims["uid"].(string))
 	if !ok {
 		log.WithFields(log.Fields{
 			"message": "error generating token because of ldap group check",

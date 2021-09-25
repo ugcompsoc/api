@@ -18,7 +18,7 @@ func (s *Server) v1Router(r *gin.RouterGroup) {
 	// ROOT route only committee
 	rCommittee := r.Group("/", IsCommitteeMiddleware())
 	rCommittee.GET("societies", s.SocietiesV1Get)
-	r.GET("users", s.UsersV1Get)
+	rCommittee.GET("users", s.UsersV1Get)
 	
 	// AUTH route
 	a := r.Group("/auth")

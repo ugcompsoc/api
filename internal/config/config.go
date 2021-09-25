@@ -89,8 +89,7 @@ type Config struct {
 		DN string `mapstructure:"dn"`
 		BindUser string `mapstructure:"bind_user"`
 		BindSecret string `mapstructure:"bind_secret"`
-		SocietyAttributes []string `mapstructure:"society_attributes"`
-		UserAttributes []string `mapstructure:"user_attributes"`
+		Attributes []string `mapstructure:"attributes"`
 	}
 
 	CompSocSSO struct {

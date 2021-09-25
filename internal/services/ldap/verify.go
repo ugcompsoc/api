@@ -3,16 +3,15 @@ package ldap
 import (
 	//"github.com/go-ldap/ldap/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/nuigcompsoc/api/internal/config"
 	"strings"
 )
 
-func generateDNString(c *config.Config, uid string, ou string) string {
-	return "uid=" + uid + ",ou=" + ou + "," + c.LDAP.DN
+func (c *Client) generateDNString(uid string, ou string) string {
+	return "uid=" + uid + ",ou=" + ou + "," + c.DN
 }
 
-func IsUserOrIsSociety(c *config.Config, uid string) (string, bool) {
-	entries, ok := search(c, c.LDAP.DN, "(|(uid=" + uid + "))", []string{"dn"})
+func (c *Client) IsUserOrIsSociety(uid string) (string, bool) {
+	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))")
 	if len(entries) == 0 {
 		log.WithFields(log.Fields{
 			"message": "could find uid",
@@ -29,8 +28,8 @@ func IsUserOrIsSociety(c *config.Config, uid string) (string, bool) {
 }
 
 // bool1: uidexists, bool2: operation was ok
-func CheckUIDExists(cfg *config.Config, uid string) (bool, bool) {
-	entries, ok := search(cfg, cfg.LDAP.DN, "(|(uid=" + uid + "))", []string{"uid"})
+func (c *Client) CheckUIDExists(uid string) (bool, bool) {
+	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))")
 	if !ok {
 		return false, false
 	}
@@ -45,8 +44,8 @@ func CheckUIDExists(cfg *config.Config, uid string) (bool, bool) {
 }
 
 // bool1: uid is in group, bool2: operation was ok
-func checkUserIsInGroup(cfg *config.Config, uid string, group string) (bool, bool) {
-	entries, ok := search(cfg, "ou=groups," + cfg.LDAP.DN, "(|(cn=" + group + "))", []string{"member"})
+func (c *Client) checkUserIsInGroup(uid string, group string) (bool, bool) {
+	entries, ok := c.search("ou=groups," + c.DN, "(|(cn=" + group + "))", "member")
 	if !ok {
 		return false, false
 	}
@@ -65,10 +64,10 @@ func checkUserIsInGroup(cfg *config.Config, uid string, group string) (bool, boo
 	return false, true
 }
 
-func CheckUserIsAdmin(cfg *config.Config, uid string) (bool, bool) {
-	return checkUserIsInGroup(cfg, uid, "admin")
+func (c *Client) CheckUserIsAdmin(uid string) (bool, bool) {
+	return c.checkUserIsInGroup(uid, "admin")
 }
 
-func CheckUserIsCommittee(cfg *config.Config, uid string) (bool, bool) {
-	return checkUserIsInGroup(cfg, uid, "committee")
+func (c *Client) CheckUserIsCommittee(uid string) (bool, bool) {
+	return c.checkUserIsInGroup(uid, "committee")
 }

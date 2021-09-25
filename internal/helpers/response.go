@@ -30,13 +30,13 @@ func RespondWithError(c *gin.Context, code int, data error) {
 func RespondWithToken(c *gin.Context, token string) {
 	c.Header("Set-Cookie", "data=" + token)
 	c.SetCookie(c.Request.Host, token, int(time.Now().Add(24 * time.Hour).Unix()), "/", c.Request.Host, false, true)
-	c.Redirect(http.StatusTemporaryRedirect, c.Request.URL.Scheme + "://" + c.Request.Host + "/v1")
+	c.Redirect(http.StatusTemporaryRedirect, c.Request.URL.Scheme + "://" + c.Request.Host)
 }
 
 func RedirectWithToken(c *gin.Context, token string) {
 	c.Header("Set-Cookie", "data=" + token)
 	c.SetCookie(c.Request.Host, token, int(time.Now().Add(24 * time.Hour).Unix()), "/", c.Request.Host, false, true)
-	c.Redirect(http.StatusTemporaryRedirect, c.Request.URL.Scheme + "://" + c.Request.Host + "/v1")
+	c.Redirect(http.StatusTemporaryRedirect, c.Request.URL.Scheme + "://" + c.Request.Host)
 }
 
 func RedirectWithString(c *gin.Context, message string) {

@@ -52,7 +52,8 @@ func (s *Server) AuthV1RegisterPost(c *gin.Context) {
 	}
 
 	// Check our ldap to see if their preferred username is already taken
-	exists, ok := ldap.CheckUIDExists(&s.config, preferredUsername)
+	l := ldap.NewClient(&s.config)
+	exists, ok := l.CheckUIDExists(preferredUsername)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("could not connect to LDAP"))
 		return
@@ -123,7 +124,8 @@ func (s *Server) AuthV1RegisterVerifyGet(c *gin.Context) {
 		h.RedirectWithError(c, errors.New("cannot connect to society portal"))
 		return
 	}
-	ok = ldap.RegisterUser(&s.config, uid, "aaabbbccc", info)
+	l := ldap.NewClient(&s.config)
+	ok = l.RegisterUser(uid, "aaabbbccc", info)
 	if !ok {
 		h.RedirectWithError(c, errors.New("could not register you"))
 		return
@@ -215,12 +217,13 @@ func (s *Server) AuthV1GoogleCallbackGet(c *gin.Context) {
 		return
 	}
 
+	l := ldap.NewClient(&s.config)
 	uid := strings.Split(claims["email"].(string), "@")[0]
-	if exists, ok := ldap.CheckUIDExists(&s.config, uid); !ok {
+	if exists, ok := l.CheckUIDExists(uid); !ok {
 		h.RedirectWithError(c, errors.New("server error"))
 		return
 	} else if !exists {
-		if ok = ldap.RegisterSociety(&s.config, claims); !ok {
+		if ok = l.RegisterSociety(claims); !ok {
 			h.RedirectWithError(c, errors.New("could not register, please contact us"))
 			return
 		}
@@ -246,7 +249,8 @@ func (s *Server) AuthV1GoogleCallbackGet(c *gin.Context) {
  **************************/
 
 func (s *Server) GroupsV1Get(c *gin.Context) {
-	groups, ok := ldap.GetAllGroups(&s.config)
+	l := ldap.NewClient(&s.config)
+	groups, ok := l.GetAllGroups()
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
@@ -261,7 +265,8 @@ func (s *Server) GroupsV1NameGet(c *gin.Context) {
 		return
 	}
 
-	members, ok := ldap.GetGroup(&s.config, name)
+	l := ldap.NewClient(&s.config)
+	members, ok := l.GetGroup(name)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
@@ -279,7 +284,8 @@ func (s *Server) GroupsV1NameGet(c *gin.Context) {
  ***************************/
 
 func (s *Server) UsersV1Get(c *gin.Context) {
-	users, ok := ldap.GetUsersOrSocieties(&s.config, "people", s.config.LDAP.UserAttributes)
+	l := ldap.NewClient(&s.config)
+	users, ok := l.GetUsersFromOU("people")
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
@@ -297,11 +303,12 @@ func (s *Server) UsersV1NameGet(c *gin.Context) {
 		return
 	}
 
-	user, ok := ldap.GetUserOrSociety(&s.config, name, "people", s.config.LDAP.UserAttributes)
+	l := ldap.NewClient(&s.config)
+	user, ok := l.GetUser(name)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
-	} else if (len(user) < 1) {
+	} else if (user == nil) {
 		h.RespondWithString(c, 200, "user does not exist")
 		return
 	}
@@ -344,7 +351,8 @@ func (s *Server) UsersV1NamePatch(c *gin.Context) {
 		return
 	}
 
-	ok := ldap.ModifyUser(&s.config, uid, firstName, lastName, mail)
+	l := ldap.NewClient(&s.config)
+	ok := l.ModifyUser(uid, firstName, lastName, mail)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
@@ -361,13 +369,15 @@ func (s *Server) UsersV1NameDelete(c *gin.Context) {
 		return
 	}
 
+	l := ldap.NewClient(&s.config)
+
 	// If an admin, just allow them to delete it, else email the user asking for confirmation
 	if IsAdmin(token.(*golangjwt.Token)) {
 		if name == token.(*golangjwt.Token).Claims.(golangjwt.MapClaims)["uid"].(string) {
 			h.RespondWithError(c, 400, errors.New("can not delete yourself"))
 			return
 		}
-		ok := ldap.DeleteUser(&s.config, name)
+		ok := l.DeleteUser(name)
 		if !ok {
 			h.RespondWithError(c, 500, errors.New("could not delete user"))
 			return
@@ -386,13 +396,16 @@ func (s *Server) UsersV1NameDelete(c *gin.Context) {
 		h.RespondWithError(c, 500, errors.New("could not generate token"))
 		return
 	}
-	users, ok := ldap.GetUserOrSociety(&s.config, name, "people", []string{"uid", "mail"})
+	user, ok := l.GetUser(name)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
+	} else if (user == nil) {
+		h.RespondWithError(c, 500, errors.New("user does not exist"))
+		return
 	}
 	link := s.config.FormHomeURL() + "/v1/users/" + name + "/" + tokenString
-	ok = s.SendMail(s.config.SMTP.AccountAddress, users[name]["mail"], "test, " + link)
+	ok = s.SendMail(s.config.SMTP.AccountAddress, user.Mail, "test, " + link)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("could not send email"))
 		return 
@@ -415,7 +428,8 @@ func (s *Server) UsersV1NameVerifyGet(c *gin.Context) {
 	// tokens should always have uid, no need to verify
 	uid, _ := jwt.ExtractClaims(token)["uid"].(string)
 
-	ok = ldap.DeleteUser(&s.config, uid)
+	l := ldap.NewClient(&s.config)
+	ok = l.DeleteUser(uid)
 	if !ok {
 		h.RedirectWithError(c, errors.New("server error"))
 		return
@@ -438,7 +452,8 @@ func (s *Server) UsersV1NameVerifyGet(c *gin.Context) {
  * An admin can request a list of all societies
  */
  func (s *Server) SocietiesV1Get(c *gin.Context) {
-	societies, ok := ldap.GetUsersOrSocieties(&s.config, "societies",  s.config.LDAP.SocietyAttributes)
+	l := ldap.NewClient(&s.config)
+	societies, ok := l.GetUsersFromOU("societies")
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
@@ -459,11 +474,12 @@ func (s *Server) SocietiesV1NameGet(c *gin.Context) {
 		return
 	}
 
-	society, ok := ldap.GetUserOrSociety(&s.config, name, "societies", s.config.LDAP.SocietyAttributes)
+	l := ldap.NewClient(&s.config)
+	society, ok := l.GetUser(name)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
-	} else if (len(society) < 1) {
+	} else if (society == nil) {
 		h.RespondWithString(c, 200, "society does not exist")
 		return
 	}
@@ -492,13 +508,17 @@ func (s *Server) SocietiesV1NameDelete(c *gin.Context) {
 		h.RespondWithError(c, 500, errors.New("could not generate token"))
 		return
 	}
-	societies, ok := ldap.GetUserOrSociety(&s.config, name, "societies", []string{"uid", "mail"})
+	l := ldap.NewClient(&s.config)
+	society, ok := l.GetUser(name)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
+	} else if (society == nil) {
+		h.RespondWithError(c, 500, errors.New("society does not exist"))
+		return
 	}
 	link := s.config.FormHomeURL() + "/v1/societies/" + name + "/" + tokenString
-	ok = s.SendMail(s.config.SMTP.AccountAddress, societies[name]["mail"], "test, " + link)
+	ok = s.SendMail(s.config.SMTP.AccountAddress, society.Mail, "test, " + link)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("could not send email"))
 		return 
@@ -521,7 +541,8 @@ func (s *Server) SocietiesV1NameVerifyGet(c *gin.Context) {
 	// tokens should always have uid, no need to verify
 	uid, _ := jwt.ExtractClaims(token)["uid"].(string)
 
-	ok = ldap.DeleteSociety(&s.config, uid)
+	l := ldap.NewClient(&s.config)
+	ok = l.DeleteSociety(uid)
 	if !ok {
 		h.RedirectWithError(c, errors.New("server error"))
 		return

@@ -145,7 +145,7 @@ func IsAuthenticated(token *golangjwt.Token) bool {
 }
 
 func IsCommittee(token *golangjwt.Token) bool {
-	return token.Claims.(golangjwt.MapClaims)["is_committee"].(bool)
+	return token.Claims.(golangjwt.MapClaims)["is_committee"].(bool) || IsAdmin(token)
 }
 
 /*

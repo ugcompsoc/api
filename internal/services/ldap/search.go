@@ -3,33 +3,49 @@ package ldap
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/go-ldap/ldap/v3"
-	"github.com/nuigcompsoc/api/internal/config"
 	"strings"
+	"strconv"
 )
 
 /*
  * LDAP Utils
  */
 
- func entriesToMap(entries []*ldap.Entry, attributes []string) (map[string]map[string][]string) {
-	arr := make(map[string]map[string][]string, len(entries))
+ func entriesToMap(entries []*ldap.Entry) (map[string]*User) {
+	users := make(map[string]*User, len(entries))
 	for _, entry := range entries {
-		arr[entry.GetAttributeValue("uid")] = make(map[string][]string, len(attributes))
-		for _, attribute := range attributes {
-			values := entry.GetAttributeValues(attribute)
-			arr[entry.GetAttributeValue("uid")][attribute] = make([]string, len(values))
-			arr[entry.GetAttributeValue("uid")][attribute] = values
-		}
+		uid := entry.GetAttributeValue("uid")
+		users[uid] = entryToUser(entry)
 	}
-	return arr
+	return users
+}
+
+func entryToUser(entry *ldap.Entry) *User {
+	uidNumber, _ := strconv.Atoi(entry.GetAttributeValue("uidNumber"))
+	return &User{
+		FullName: entry.GetAttributeValue("cn"),
+		FirstName: entry.GetAttributeValue("givenName"),
+		Surname: entry.GetAttributeValue("sn"),
+		MemberID: entry.GetAttributeValue("employeeNumber"),
+		Mail: entry.GetAttributeValues("mail"),
+		UID: entry.GetAttributeValue("uid"),
+		ObjectClass: entry.GetAttributeValues("objectClass"),
+		Shell: entry.GetAttributeValue("loginShell"),
+		Home: entry.GetAttributeValue("homeDirectory"),
+		UIDNumber: uidNumber,
+	}
 }
  
 /*
  * Account Search Utils
  */
 
-func search(c *config.Config, searchBase string, filter string, attributes []string) ([]*ldap.Entry, bool) {
-	l := bind(c)
+func (c *Client) search(searchBase string, filter string, attributes ...string) ([]*ldap.Entry, bool) {
+	if len(attributes) < 1 {
+		attributes = c.Attributes
+	}
+	
+	l := c.bind()
 	searchRequest := ldap.NewSearchRequest(
 		searchBase,
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
@@ -50,12 +66,8 @@ func search(c *config.Config, searchBase string, filter string, attributes []str
 	return sr.Entries, true
 }
 
-func GetUsersOrSocieties(c *config.Config, group string, attributes []string) (map[string]map[string][]string, bool) {
-	return GetUserOrSociety(c, "*", group, attributes)
-}
-
-func GetUserOrSociety(c *config.Config, uid string, group string, attributes []string) (map[string]map[string][]string, bool) {
-	entries, ok := search(c, "ou=" + group + "," + c.LDAP.DN, "(|(uid=" + uid + "))", attributes)
+func (c *Client) GetUsersFromOU(ou string) (map[string]*User, bool) {
+	entries, ok := c.search("ou=" + ou + "," + c.DN, "(|(uid=*))")
 	if len(entries) < 1 {
 		log.WithFields(log.Fields{
 			"message": "ldap search successful but search resulted in 0 results",
@@ -64,12 +76,24 @@ func GetUserOrSociety(c *config.Config, uid string, group string, attributes []s
 	} else if !ok {
 		return nil, false
 	} 
-	entryMap := entriesToMap(entries, attributes)
-	return entryMap, true
+	return entriesToMap(entries), true
 }
 
-func GetGroup(c *config.Config, group string) (map[string]map[string][]string, bool) {
-	entries, ok := search(c, "ou=groups," + c.LDAP.DN, "(|(cn=" + group + "))", []string{"cn", "member"})
+func (c *Client) GetUser(uid string) (*User, bool) {
+	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))")
+	if len(entries) < 1 {
+		log.WithFields(log.Fields{
+			"message": "ldap search successful but search resulted in 0 results",
+		}).Info("ldap")
+		return nil, true
+	} else if !ok {
+		return nil, false
+	} 
+	return entryToUser(entries[0]), true
+}
+
+func (c *Client) GetGroup(group string) (map[string]map[string][]string, bool) {
+	entries, ok := c.search("ou=groups," + c.DN, "(|(cn=" + group + "))")
 	if len(entries) < 1 {
 		log.WithFields(log.Fields{
 			"message": "ldap search successful but search resulted in 0 results",
@@ -88,6 +112,6 @@ func GetGroup(c *config.Config, group string) (map[string]map[string][]string, b
 	return arr, true
 }
 
-func GetAllGroups(c *config.Config) (map[string]map[string][]string, bool) {
-	return GetGroup(c, "*")
+func (c *Client) GetAllGroups() (map[string]map[string][]string, bool) {
+	return c.GetGroup("*")
 }

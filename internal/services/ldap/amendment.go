@@ -3,7 +3,6 @@ package ldap
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/go-ldap/ldap/v3"
-	"github.com/nuigcompsoc/api/internal/config"
 	"strings"
 	"strconv"
 )
@@ -12,25 +11,25 @@ import (
  * Account Utils
  */
 
-func ModifyUser(c *config.Config, uid string, firstName string, lastName string, mail string) bool {
-	ou, ok := IsUserOrIsSociety(c, uid)
+func (c *Client) ModifyUser(uid string, firstName string, lastName string, mail string) bool {
+	ou, ok := c.IsUserOrIsSociety(uid)
 	if !ok {
 		return false
 	}
 
-	modifyReq := ldap.NewModifyRequest(generateDNString(c, uid, ou), nil)
+	modifyReq := ldap.NewModifyRequest(c.generateDNString(uid, ou), nil)
 	modifyReq.Replace("givenname", []string{firstName})
 	modifyReq.Replace("sn", []string{lastName})
 	modifyReq.Replace("cn", []string{firstName + " " + lastName})
 	modifyReq.Replace("mail", []string{mail})
 
-	l := bind(c)
+	l := c.bind()
 	err := l.Modify(modifyReq)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"message": "could not modify user",
 			"changes": map[string]string{
-				"dn": generateDNString(c, uid, ou),
+				"dn": c.generateDNString(uid, ou),
 				"firstName": firstName,
 				"lastName": lastName,
 				"mail": mail,
@@ -43,17 +42,17 @@ func ModifyUser(c *config.Config, uid string, firstName string, lastName string,
 	return true
 }
 
-func DeleteUser(c *config.Config, uid string) bool {
-	deleteReq := ldap.NewDelRequest(generateDNString(c, uid, "people"), nil)
+func (c *Client) DeleteUser(uid string) bool {
+	deleteReq := ldap.NewDelRequest(c.generateDNString(uid, "people"), nil)
 
-	l := bind(c)
+	l := c.bind()
 	err := l.Del(deleteReq)
 
 	if err != nil {
 		log.WithFields(log.Fields{
 			"message": "could not delete user",
 			"changes": map[string]string{
-				"dn": generateDNString(c, uid, "people"),
+				"dn": c.generateDNString(uid, "people"),
 			},
 			"error": err.Error(),
 		}).Error("ldap")
@@ -63,17 +62,17 @@ func DeleteUser(c *config.Config, uid string) bool {
 	return true
 }
 
-func DeleteSociety(c *config.Config, uid string) bool {
-	deleteReq := ldap.NewDelRequest(generateDNString(c, uid, "societies"), nil)
+func (c *Client) DeleteSociety(uid string) bool {
+	deleteReq := ldap.NewDelRequest(c.generateDNString(uid, "societies"), nil)
 
-	l := bind(c)
+	l := c.bind()
 	err := l.Del(deleteReq)
 
 	if err != nil {
 		log.WithFields(log.Fields{
 			"message": "could not delete society",
 			"changes": map[string]string{
-				"dn": generateDNString(c, uid, "societies"),
+				"dn": c.generateDNString(uid, "societies"),
 			},
 			"error": err.Error(),
 		}).Error("ldap")
@@ -83,9 +82,8 @@ func DeleteSociety(c *config.Config, uid string) bool {
 	return true
 }
 
-func getNextUIDNumber(c *config.Config) (int, bool) {
-	attributes := []string{"uidNumber"}
-	entries, ok := search(c, c.LDAP.DN, "(|(uid=*))", attributes)
+func (c *Client) getNextUIDNumber() (int, bool) {
+	entries, ok := c.search(c.DN, "(|(uid=*))")
 	if !ok {
 		log.WithFields(log.Fields{
 			"message": "error while searching: expected results for getNextUIDNumber",
@@ -104,11 +102,11 @@ func getNextUIDNumber(c *config.Config) (int, bool) {
 	return highestUID + 1, true
 }
 
-func RegisterSociety(c *config.Config, claims map[string]interface{}) bool {
-	l := bind(c)
+func (c *Client) RegisterSociety(claims map[string]interface{}) bool {
+	l := c.bind()
 	uid := strings.Split(claims["email"].(string), "@")[0]
 
-	addReq := ldap.NewAddRequest("uid=" + uid + ",ou=societies," + c.LDAP.DN, nil)
+	addReq := ldap.NewAddRequest("uid=" + uid + ",ou=societies," + c.DN, nil)
 	addReq.Attribute("cn", []string{claims["given_name"].(string) + " " + claims["family_name"].(string)})
 	addReq.Attribute("givenname", []string{claims["given_name"].(string)})
 	addReq.Attribute("sn", []string{claims["family_name"].(string)})
@@ -127,16 +125,16 @@ func RegisterSociety(c *config.Config, claims map[string]interface{}) bool {
 	return true
 }
 
-func RegisterUser(c *config.Config, uid string, password string, info map[string]interface{}) bool {
-	l := bind(c)
+func (c *Client) RegisterUser(uid string, password string, info map[string]interface{}) bool {
+	l := c.bind()
 
-	nextUIDNumber, ok := getNextUIDNumber(c)
+	nextUIDNumber, ok := c.getNextUIDNumber()
 	if !ok {
 		return false
 	}
 	nextUID := strconv.Itoa(nextUIDNumber)
 
-	addReq := ldap.NewAddRequest("uid=" + uid + ",ou=people," + c.LDAP.DN, nil)
+	addReq := ldap.NewAddRequest("uid=" + uid + ",ou=people," + c.DN, nil)
 	addReq.Attribute("cn", []string{info["FirstName"].(string) + " " + info["LastName"].(string)})
 	addReq.Attribute("givenname", []string{info["FirstName"].(string)})
 	addReq.Attribute("sn", []string{info["LastName"].(string)})
