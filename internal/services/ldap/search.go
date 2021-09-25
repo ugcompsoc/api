@@ -79,8 +79,14 @@ func (c *Client) GetUsersFromOU(ou string) (map[string]*User, bool) {
 	return entriesToMap(entries), true
 }
 
-func (c *Client) GetUser(uid string) (*User, bool) {
-	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))")
+func (c *Client) GetUser(uid string, ou ...string) (*User, bool) {
+	// Can specify the OU we want to search in (optional)
+	extraFilter := ""
+	if len(ou) != 0 {
+		extraFilter = "(ou=" + ou[0] + ")"
+	}
+
+	entries, ok := c.search(c.DN, "(&(uid=" + uid + ")" + extraFilter + ")")
 	if len(entries) < 1 {
 		log.WithFields(log.Fields{
 			"message": "ldap search successful but search resulted in 0 results",

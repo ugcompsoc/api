@@ -475,7 +475,7 @@ func (s *Server) SocietiesV1NameGet(c *gin.Context) {
 	}
 
 	l := ldap.NewClient(&s.config)
-	society, ok := l.GetUser(name)
+	society, ok := l.GetUser(name, "societies")
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
