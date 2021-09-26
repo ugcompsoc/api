@@ -285,7 +285,7 @@ func (s *Server) GroupsV1NameGet(c *gin.Context) {
 
 func (s *Server) UsersV1Get(c *gin.Context) {
 	l := ldap.NewClient(&s.config)
-	users, ok := l.GetUsersFromOU("people")
+	users, ok := l.GetUsers()
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
@@ -453,7 +453,7 @@ func (s *Server) UsersV1NameVerifyGet(c *gin.Context) {
  */
  func (s *Server) SocietiesV1Get(c *gin.Context) {
 	l := ldap.NewClient(&s.config)
-	societies, ok := l.GetUsersFromOU("societies")
+	societies, ok := l.GetSocieties()
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return
@@ -475,7 +475,7 @@ func (s *Server) SocietiesV1NameGet(c *gin.Context) {
 	}
 
 	l := ldap.NewClient(&s.config)
-	society, ok := l.GetUser(name, "societies")
+	society, ok := l.GetSociety(name)
 	if !ok {
 		h.RespondWithError(c, 500, errors.New("server error"))
 		return

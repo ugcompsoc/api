@@ -83,7 +83,7 @@ func (c *Client) DeleteSociety(uid string) bool {
 }
 
 func (c *Client) getNextUIDNumber() (int, bool) {
-	entries, ok := c.search(c.DN, "(|(uid=*))")
+	entries, ok := c.search(c.DN, "(|(uid=*))", []string{"uidNumber"})
 	if !ok {
 		log.WithFields(log.Fields{
 			"message": "error while searching: expected results for getNextUIDNumber",

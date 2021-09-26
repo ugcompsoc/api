@@ -11,7 +11,7 @@ func (c *Client) generateDNString(uid string, ou string) string {
 }
 
 func (c *Client) IsUserOrIsSociety(uid string) (string, bool) {
-	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))")
+	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))", []string{"uid"})
 	if len(entries) == 0 {
 		log.WithFields(log.Fields{
 			"message": "could find uid",
@@ -29,7 +29,7 @@ func (c *Client) IsUserOrIsSociety(uid string) (string, bool) {
 
 // bool1: uidexists, bool2: operation was ok
 func (c *Client) CheckUIDExists(uid string) (bool, bool) {
-	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))")
+	entries, ok := c.search(c.DN, "(|(uid=" + uid + "))", []string{"uid"})
 	if !ok {
 		return false, false
 	}
@@ -45,7 +45,7 @@ func (c *Client) CheckUIDExists(uid string) (bool, bool) {
 
 // bool1: uid is in group, bool2: operation was ok
 func (c *Client) checkUserIsInGroup(uid string, group string) (bool, bool) {
-	entries, ok := c.search("ou=groups," + c.DN, "(|(cn=" + group + "))", "member")
+	entries, ok := c.search("ou=groups," + c.DN, "(|(cn=" + group + "))", []string{"member"})
 	if !ok {
 		return false, false
 	}

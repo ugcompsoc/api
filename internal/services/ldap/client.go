@@ -5,11 +5,10 @@ import (
 	"github.com/nuigcompsoc/api/internal/config"
 )
 
-type User struct {
+type Entry struct {
 	FullName 	string
 	FirstName	string
 	Surname		string
-	MemberID	string
 	Mail		[]string
 	UID			string
 	ObjectClass	[]string
@@ -18,12 +17,25 @@ type User struct {
 	UIDNumber	int
 }
 
+type User struct {
+	Entry
+	MemberID	string
+}
+
+type Society struct {
+	Entry
+}
+
 type Client struct {
-	URL			string
-	DN			string
+	URL	string
+	DN	string
 	BindUser	string
 	BindSecret	string
-	Attributes	[]string
+	UserAttributes	[]string
+	SocietyAttributes	[]string
+	GroupAttributes	[]string
+	UserOU	string
+	SocietyOU string
 }
 
 func NewClient(c *config.Config) *Client {
@@ -32,7 +44,11 @@ func NewClient(c *config.Config) *Client {
 		DN: c.LDAP.DN,
 		BindUser: c.LDAP.BindUser,
 		BindSecret: c.LDAP.BindSecret,
-		Attributes: c.LDAP.Attributes,
+		UserAttributes: c.LDAP.UserAttributes,
+		SocietyAttributes: c.LDAP.SocietyAttributes,
+		GroupAttributes: c.LDAP.GroupAttributes,
+		UserOU: c.LDAP.UserOU,
+		SocietyOU: c.LDAP.SocietyOU,
 	}
 }
 
