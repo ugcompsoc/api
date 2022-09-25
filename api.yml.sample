@@ -1,0 +1,19 @@
+log_level: TRACE
+timeouts:
+  startup: 30s
+  shutdown: 30s
+http:
+  listen_address: ':8080'
+  cors:
+    allowed_origins: ['*']
+database:
+  host: 'mongodb+srv://URL'
+  name: 'DATABASE-NAME'
+  username: 'DATABASE-USERNAME'
+  password: 'DATABASE-PASSWORD'
+socsportal:
+  endpoint: 'SOCS-PORTAL-API-ENDPOINT'
+  event_service: 'SOCS-PORTAL-API-EVENT-SERVICE'
+  event_service_method_individual: 'SOCS-PORTAL-API-EVENT-SERVICE-METHOD-INDIVIDUAL'
+  event_service_method_all: 'SOCS-PORTAL-API-EVENT-SERVICE-METHOD-ALL'
+  event_service_action: 'SOCS-PORTAL-API-EVENT-SERVICE-ACTION'
