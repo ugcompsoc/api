@@ -36,6 +36,16 @@ type Config struct {
 		Password string `mapstructure:"password"`
 	}
 
+	LDAP struct {
+		URL               string `mapstrcutre:"url"`
+		Bind              string `mapstructure:"bind"`
+		Password          string `mapstructure:"password"`
+		UserSearchBase    string `mapstructure:"user_search_base"`
+		SocietySearchBase string `mapstructure:"society_search_base"`
+		GroupSearchBase   string `mapstructure:"group_search_base"`
+		SearchBase        string `mapstructure:"search_base"`
+	}
+
 	SocsPortal struct {
 		Endpoint                     string `mapstructure:"endpoint"`
 		EventService                 string `mapstructure:"event_service"`

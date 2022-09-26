@@ -1,4 +1,4 @@
-package server
+package services
 
 import (
 	b64 "encoding/base64"
@@ -7,9 +7,18 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nuigcompsoc/api/internal/config"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 )
+
+type EventService struct {
+	Endpoint                     string
+	EventService                 string
+	EventServiceMethodAll        string
+	EventServiceMethodIndividual string
+	EventServiceAction           string
+}
 
 type Event struct {
 	EventDetailsID    int    `json:"eventDetailsID"`
@@ -54,12 +63,22 @@ type EventDetails struct {
 	EventICalUrl           string `json:"eventICalUrl" bson:"eventICalUrl"`
 }
 
+func NewEventService(config *config.Config) *EventService {
+	return &EventService{
+		Endpoint:                     config.SocsPortal.Endpoint,
+		EventService:                 config.SocsPortal.EventService,
+		EventServiceMethodAll:        config.SocsPortal.EventServiceMethodAll,
+		EventServiceMethodIndividual: config.SocsPortal.EventServiceMethodIndividual,
+		EventServiceAction:           config.SocsPortal.EventServiceAction,
+	}
+}
+
 // This contacts the Socs Portal to get the list of past and upcoming events.
 // We then have no use for the rest of the data as it doesn't give us enough
 // details anyways. So we've to contact the Socs Portal again on a seperate
 // API for every eventID we get. This function just returns an array of
 // eventDetailsIDs as strings.
-func (s *Server) getEventsForSocID(socID string) ([]Event, error) {
+func (s *EventService) GetEventsForSocID(socID string) ([]Event, error) {
 	/*
 		A response from the societies portal will look like this:
 		[
@@ -84,16 +103,16 @@ func (s *Server) getEventsForSocID(socID string) ([]Event, error) {
 		]
 	*/
 
-	req, err := http.NewRequest("GET", s.Config.SocsPortal.Endpoint, nil)
+	req, err := http.NewRequest("GET", s.Endpoint, nil)
 	if err != nil {
 		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal endpoint")
 		return nil, err
 	}
 
 	q := req.URL.Query()
-	q.Add("object", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventService)))
-	q.Add("method", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventServiceMethodAll)))
-	q.Add("action", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventServiceAction)))
+	q.Add("object", b64.StdEncoding.EncodeToString([]byte(s.EventService)))
+	q.Add("method", b64.StdEncoding.EncodeToString([]byte(s.EventServiceMethodAll)))
+	q.Add("action", b64.StdEncoding.EncodeToString([]byte(s.EventServiceAction)))
 	req.URL.RawQuery = q.Encode()
 
 	res, err := http.DefaultClient.Do(req)
@@ -116,7 +135,7 @@ func (s *Server) getEventsForSocID(socID string) ([]Event, error) {
 // Here we're gettings the eventDetailsIDs and contacting the Socs Poral to get
 // details on every event. The idea then is to save them to the database so we're
 // not annoying Socs Portal every time we want to find out about our events.
-func (s *Server) getAllEventsDetails(eventDetailIDs []int) (map[int]EventDetails, error) {
+func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]EventDetails, error) {
 	/*
 		A response from the societies portal will look like this:
 		[
@@ -151,17 +170,17 @@ func (s *Server) getAllEventsDetails(eventDetailIDs []int) (map[int]EventDetails
 
 	eventsDetails := map[int]EventDetails{}
 	for _, eventDetailsID := range eventDetailIDs {
-		req, err := http.NewRequest("GET", s.Config.SocsPortal.Endpoint, nil)
+		req, err := http.NewRequest("GET", s.Endpoint, nil)
 		if err != nil {
 			log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal endpoint")
 			return nil, err
 		}
 
 		q := req.URL.Query()
-		q.Add("object", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventService)))
-		q.Add("method", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventServiceMethodIndividual)))
+		q.Add("object", b64.StdEncoding.EncodeToString([]byte(s.EventService)))
+		q.Add("method", b64.StdEncoding.EncodeToString([]byte(s.EventServiceMethodIndividual)))
 		q.Add("eventDetailsID", strconv.Itoa(eventDetailsID))
-		q.Add("action", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventServiceAction)))
+		q.Add("action", b64.StdEncoding.EncodeToString([]byte(s.EventServiceAction)))
 		req.URL.RawQuery = q.Encode()
 
 		res, err := http.DefaultClient.Do(req)
@@ -183,19 +202,19 @@ func (s *Server) getAllEventsDetails(eventDetailIDs []int) (map[int]EventDetails
 	return eventsDetails, nil
 }
 
-func (s *Server) getAllEvents(onlyUpcomingEvents bool) ([]Event, error) {
+func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]Event, error) {
 	socIDs := []int{30, 484}
 
-	req, err := http.NewRequest("GET", s.Config.SocsPortal.Endpoint, nil)
+	req, err := http.NewRequest("GET", s.Endpoint, nil)
 	if err != nil {
 		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal endpoint")
 		return nil, err
 	}
 
 	q := req.URL.Query()
-	q.Add("object", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventService)))
-	q.Add("method", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventServiceMethodAll)))
-	q.Add("action", b64.StdEncoding.EncodeToString([]byte(s.Config.SocsPortal.EventServiceAction)))
+	q.Add("object", b64.StdEncoding.EncodeToString([]byte(s.EventService)))
+	q.Add("method", b64.StdEncoding.EncodeToString([]byte(s.EventServiceMethodAll)))
+	q.Add("action", b64.StdEncoding.EncodeToString([]byte(s.EventServiceAction)))
 	if !onlyUpcomingEvents {
 		log.Info("Requesting only upcoming events")
 		q.Add("start", time.Now().UTC().Format(time.RFC3339))

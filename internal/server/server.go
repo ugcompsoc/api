@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-co-op/gocron"
 	"github.com/rs/cors"
 
 	"github.com/nuigcompsoc/api/internal/config"
+	"github.com/nuigcompsoc/api/internal/services"
 )
 
 type Server struct {
 	Config    config.Config
 	HTTP      *http.Server
-	Scheduler *gocron.Scheduler
-	Datastore *MongoDatastore
+	Scheduler *services.SchedulerService
+	Datastore *services.MongoDatastore
 }
 
 // NewServer returns an initialized Server
@@ -46,9 +46,10 @@ func NewServer(config config.Config) *Server {
 		HTTP:   httpSrv,
 	}
 
-	s.Datastore = s.NewDatastore()
+	s.Datastore = services.NewDatastore(&s.Config)
 
-	s.Scheduler = s.RunAllServices()
+	s.Scheduler = services.NewSchedulerService(&s.Config)
+	s.Scheduler.RunAllServices()
 
 	// v1 route
 	v1 := r.Group("v1")

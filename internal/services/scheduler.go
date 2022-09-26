@@ -1,23 +1,33 @@
-package server
+package services
 
 import (
 	"time"
+
+	"github.com/nuigcompsoc/api/internal/config"
 
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *Server) doGetAllEvents() {
+type SchedulerService struct {
+	Config    *config.Config
+	Datastore *MongoDatastore
+	Scheduler *gocron.Scheduler
+}
+
+func (s *SchedulerService) DoGetAllEvents() {
 	log.Info("Starting doGetAllEvents Task")
+
+	eventService := NewEventService(s.Config)
 
 	var allEvents []Event
 	var err error
 
 	// Once an hour we want to update all events (past and upcoming)
 	if time.Now().UTC().Minute() > 0 && time.Now().UTC().Minute() <= 5 {
-		allEvents, err = s.getAllEvents(true)
+		allEvents, err = eventService.GetAllEvents(true)
 	} else {
-		allEvents, err = s.getAllEvents(false)
+		allEvents, err = eventService.GetAllEvents(false)
 	}
 
 	if err != nil {
@@ -32,7 +42,7 @@ func (s *Server) doGetAllEvents() {
 
 	// Here we're getting all the event details for every event and ingoring
 	// duplicate eventDetailsID, no point duplicating work.
-	allEventDetails, err := s.getAllEventsDetails(eventDetailsIDs)
+	allEventDetails, err := eventService.GetAllEventsDetails(eventDetailsIDs)
 	if err != nil {
 		log.Warn("getAllEventsDetails Function Failed")
 		return
@@ -45,23 +55,25 @@ func (s *Server) doGetAllEvents() {
 		allEventsWithEventDetails = append(allEventsWithEventDetails, eventWithEventDetails)
 	}
 
-	err = s.Datastore.upsertEvents(allEventsWithEventDetails)
+	err = s.Datastore.UpsertEvents(allEventsWithEventDetails)
 	if err != nil {
 		log.Warn("Datastore.upsertEvents Function Failed")
 		return
 	}
 }
 
-// TODO add a pause scheduler until timestap
-func (s *Server) RunAllServices() *gocron.Scheduler {
-	var doGetAllEventsTask = s.doGetAllEvents
+func NewSchedulerService(config *config.Config) *SchedulerService {
+	return &SchedulerService{
+		Config:    config,
+		Datastore: NewDatastore(config),
+		Scheduler: gocron.NewScheduler(time.UTC),
+	}
+}
+
+func (s *SchedulerService) RunAllServices() {
+	var doGetAllEventsTask = s.DoGetAllEvents
 
 	log.Info("Starting Scheduler")
-
-	scheduler := gocron.NewScheduler(time.UTC)
-	scheduler.Every("5m").Do(doGetAllEventsTask)
-
-	scheduler.StartAsync()
-
-	return scheduler
+	s.Scheduler.Every("5m").Do(doGetAllEventsTask)
+	s.Scheduler.StartAsync()
 }

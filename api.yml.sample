@@ -11,6 +11,14 @@ database:
   name: 'DATABASE-NAME'
   username: 'DATABASE-USERNAME'
   password: 'DATABASE-PASSWORD'
+ldap:
+  url: 'ldaps://127.0.0.1:10636'
+  bind: 'cn=admin,dc=compsoc,dc=ie'
+  password: 'EatMyShorts'
+  user_search_base: 'ou=people,dc=compsoc,dc=ie'
+  society_search_base: 'ou=societies,dc=compsoc,dc=ie'
+  group_search_base: 'ou=groups,dc=compsoc,dc=ie'
+  search_base: 'dc=compsoc,dc=ie'
 socsportal:
   endpoint: 'SOCS-PORTAL-API-ENDPOINT'
   event_service: 'SOCS-PORTAL-API-EVENT-SERVICE'

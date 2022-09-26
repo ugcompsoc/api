@@ -1,10 +1,12 @@
-package server
+package services
 
 import (
 	"context"
 	"html"
 	"sync"
 	"time"
+
+	"github.com/nuigcompsoc/api/internal/config"
 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,11 +23,11 @@ type MongoDatastore struct {
  *	Database Setup
  */
 
-func (s *Server) NewDatastore() *MongoDatastore {
+func NewDatastore(config *config.Config) *MongoDatastore {
 
 	var mongoDataStore *MongoDatastore
 
-	db, session := s.connect()
+	db, session := connect(config)
 	if db != nil && session != nil {
 		mongoDataStore = new(MongoDatastore)
 		mongoDataStore.db = db
@@ -37,26 +39,26 @@ func (s *Server) NewDatastore() *MongoDatastore {
 	return nil
 }
 
-func (s *Server) connect() (a *mongo.Database, b *mongo.Client) {
+func connect(config *config.Config) (a *mongo.Database, b *mongo.Client) {
 
 	var connectOnce sync.Once
 	var db *mongo.Database
 	var session *mongo.Client
 
 	connectOnce.Do(func() {
-		db, session = s.connectToMongo()
+		db, session = connectToMongo(config)
 	})
 
 	return db, session
 }
 
-func (s *Server) connectToMongo() (a *mongo.Database, b *mongo.Client) {
+func connectToMongo(config *config.Config) (a *mongo.Database, b *mongo.Client) {
 
 	credential := options.Credential{
-		Username: s.Config.Database.Username,
-		Password: s.Config.Database.Password,
+		Username: config.Database.Username,
+		Password: config.Database.Password,
 	}
-	session, err := mongo.NewClient(options.Client().ApplyURI(s.Config.Database.Host).SetAuth(credential))
+	session, err := mongo.NewClient(options.Client().ApplyURI(config.Database.Host).SetAuth(credential))
 	if err != nil {
 		log.Warn("Failed to connect to Database Host")
 		return nil, nil
@@ -76,7 +78,7 @@ func (s *Server) connectToMongo() (a *mongo.Database, b *mongo.Client) {
 		return nil, nil
 	}
 
-	var DB = session.Database(s.Config.Database.Name)
+	var DB = session.Database(config.Database.Name)
 	log.Info("Connected to Database")
 
 	return DB, session
@@ -85,7 +87,7 @@ func (s *Server) connectToMongo() (a *mongo.Database, b *mongo.Client) {
 /*
  *	Database Helpers
  */
-func (ds *MongoDatastore) upsertEvents(events []EventDetails) error {
+func (ds *MongoDatastore) UpsertEvents(events []EventDetails) error {
 
 	models := []mongo.WriteModel{}
 	for _, event := range events {
@@ -116,7 +118,7 @@ func (ds *MongoDatastore) upsertEvents(events []EventDetails) error {
 	return nil
 }
 
-func (ds *MongoDatastore) getAllEvents() ([]EventDetails, error) {
+func (ds *MongoDatastore) GetAllEvents() ([]EventDetails, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -136,7 +138,7 @@ func (ds *MongoDatastore) getAllEvents() ([]EventDetails, error) {
 	return events, nil
 }
 
-func (ds *MongoDatastore) getAllUpcomingEvents() ([]EventDetails, error) {
+func (ds *MongoDatastore) GetAllUpcomingEvents() ([]EventDetails, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -159,7 +161,7 @@ func (ds *MongoDatastore) getAllUpcomingEvents() ([]EventDetails, error) {
 	return events, nil
 }
 
-func (ds *MongoDatastore) getAllPastEvents() ([]EventDetails, error) {
+func (ds *MongoDatastore) GetAllPastEvents() ([]EventDetails, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -182,7 +184,7 @@ func (ds *MongoDatastore) getAllPastEvents() ([]EventDetails, error) {
 	return events, nil
 }
 
-func (ds *MongoDatastore) getAllUpcomingEventsForSocID(socID int) ([]EventDetails, error) {
+func (ds *MongoDatastore) GetAllUpcomingEventsForSocID(socID int) ([]EventDetails, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -209,7 +211,7 @@ func (ds *MongoDatastore) getAllUpcomingEventsForSocID(socID int) ([]EventDetail
 	return events, nil
 }
 
-func (ds *MongoDatastore) getAllPastEventsForSocID(socID int) ([]EventDetails, error) {
+func (ds *MongoDatastore) GetAllPastEventsForSocID(socID int) ([]EventDetails, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

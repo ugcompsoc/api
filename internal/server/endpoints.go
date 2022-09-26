@@ -35,7 +35,7 @@ func (s *Server) MiscV1PingGet(c *gin.Context) {
  ***************************/
 
 func (s *Server) EventsV1Get(c *gin.Context) {
-	events, err := s.Datastore.getAllEvents()
+	events, err := s.Datastore.GetAllEvents()
 	if err != nil {
 		h.RespondWithError(c, 500, errors.New("failed to query database for events"))
 		return
@@ -46,7 +46,7 @@ func (s *Server) EventsV1Get(c *gin.Context) {
 }
 
 func (s *Server) EventsV1UpcomingGet(c *gin.Context) {
-	events, err := s.Datastore.getAllUpcomingEvents()
+	events, err := s.Datastore.GetAllUpcomingEvents()
 	if err != nil {
 		h.RespondWithError(c, 500, errors.New("failed to query database for events"))
 		return
@@ -63,7 +63,7 @@ func (s *Server) EventsV1UpcomingSocIDGet(c *gin.Context) {
 		return
 	}
 
-	events, err := s.Datastore.getAllUpcomingEventsForSocID(socID)
+	events, err := s.Datastore.GetAllUpcomingEventsForSocID(socID)
 	if err != nil {
 		h.RespondWithError(c, 500, errors.New("failed to query database for events"))
 		return
@@ -74,7 +74,7 @@ func (s *Server) EventsV1UpcomingSocIDGet(c *gin.Context) {
 }
 
 func (s *Server) EventsV1PastGet(c *gin.Context) {
-	events, err := s.Datastore.getAllPastEvents()
+	events, err := s.Datastore.GetAllPastEvents()
 	if err != nil {
 		h.RespondWithError(c, 500, errors.New("failed to query database for events"))
 		return
@@ -91,7 +91,7 @@ func (s *Server) EventsV1PastSocIDGet(c *gin.Context) {
 		return
 	}
 
-	events, err := s.Datastore.getAllPastEventsForSocID(socID)
+	events, err := s.Datastore.GetAllPastEventsForSocID(socID)
 	if err != nil {
 		h.RespondWithError(c, 500, errors.New("failed to query database for events"))
 		return
