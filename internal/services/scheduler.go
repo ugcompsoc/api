@@ -19,16 +19,16 @@ type SchedulerService struct {
 func (s *SchedulerService) DoGetAllEvents() {
 	log.Info("Starting doGetAllEvents Task")
 
-	eventService := NewEventService(s.Config, s.Datastore)
+	societiesPortalService := NewSocietiesPortalService(s.Config, s.Datastore)
 
 	var allEvents []models.Event
 	var err error
 
 	// Once an hour we want to update all events (past and upcoming)
 	if time.Now().UTC().Minute() > 0 && time.Now().UTC().Minute() <= 5 {
-		allEvents, err = eventService.GetAllEvents(true)
+		allEvents, err = societiesPortalService.GetAllEvents(true)
 	} else {
-		allEvents, err = eventService.GetAllEvents(false)
+		allEvents, err = societiesPortalService.GetAllEvents(false)
 	}
 
 	if err != nil {
@@ -43,7 +43,7 @@ func (s *SchedulerService) DoGetAllEvents() {
 
 	// Here we're getting all the event details for every event and ingoring
 	// duplicate eventDetailsID, no point duplicating work.
-	allEventDetails, err := eventService.GetAllEventsDetails(eventDetailsIDs)
+	allEventDetails, err := societiesPortalService.GetAllEventsDetails(eventDetailsIDs)
 	if err != nil {
 		log.Warn("getAllEventsDetails Function Failed")
 		return

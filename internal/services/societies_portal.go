@@ -14,23 +14,35 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type EventService struct {
-	Datastore                    *MongoDatastore
-	Endpoint                     string
-	EventService                 string
-	EventServiceMethodAll        string
-	EventServiceMethodIndividual string
-	EventServiceAction           string
+type SocietiesPortalService struct {
+	Datastore                                *MongoDatastore
+	WebservicesEndpoint                      string
+	AjaxEndpoint                             string
+	WebservicesUsername                      string
+	WebservicesPassword                      string
+	WebservicesMemberServiceMethodIndividual string
+	WebservicesMemberServiceMethodAll        string
+	WebservicesMemberServiceSearchByOption   string
+	EventService                             string
+	EventServiceMethodAll                    string
+	EventServiceMethodIndividual             string
+	EventServiceAction                       string
 }
 
-func NewEventService(config *config.Config, datastore *MongoDatastore) *EventService {
-	return &EventService{
-		Datastore:                    datastore,
-		Endpoint:                     config.SocsPortal.Endpoint,
-		EventService:                 config.SocsPortal.EventService,
-		EventServiceMethodAll:        config.SocsPortal.EventServiceMethodAll,
-		EventServiceMethodIndividual: config.SocsPortal.EventServiceMethodIndividual,
-		EventServiceAction:           config.SocsPortal.EventServiceAction,
+func NewSocietiesPortalService(config *config.Config, datastore *MongoDatastore) *SocietiesPortalService {
+	return &SocietiesPortalService{
+		Datastore:                                datastore,
+		WebservicesEndpoint:                      config.SocsPortal.WebservicesEndpoint,
+		AjaxEndpoint:                             config.SocsPortal.AjaxEndpoint,
+		WebservicesUsername:                      config.SocsPortal.WebservicesUsername,
+		WebservicesPassword:                      config.SocsPortal.WebservicesPassword,
+		WebservicesMemberServiceMethodIndividual: config.SocsPortal.WebservicesMemberServiceMethodIndividual,
+		WebservicesMemberServiceMethodAll:        config.SocsPortal.WebservicesMemberServiceMethodAll,
+		WebservicesMemberServiceSearchByOption:   config.SocsPortal.WebservicesMemberServiceSearchByOption,
+		EventService:                             config.SocsPortal.EventService,
+		EventServiceMethodAll:                    config.SocsPortal.EventServiceMethodAll,
+		EventServiceMethodIndividual:             config.SocsPortal.EventServiceMethodIndividual,
+		EventServiceAction:                       config.SocsPortal.EventServiceAction,
 	}
 }
 
@@ -39,7 +51,7 @@ func NewEventService(config *config.Config, datastore *MongoDatastore) *EventSer
 // details anyways. So we've to contact the Socs Portal again on a seperate
 // API for every eventID we get. This function just returns an array of
 // eventDetailsIDs as strings.
-func (s *EventService) GetEventsForSocID(socID string) ([]models.Event, error) {
+func (s *SocietiesPortalService) GetEventsForSocID(socID string) ([]models.Event, error) {
 	/*
 		A response from the societies portal will look like this:
 		[
@@ -64,9 +76,9 @@ func (s *EventService) GetEventsForSocID(socID string) ([]models.Event, error) {
 		]
 	*/
 
-	req, err := http.NewRequest("GET", s.Endpoint, nil)
+	req, err := http.NewRequest("GET", s.AjaxEndpoint, nil)
 	if err != nil {
-		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal endpoint")
+		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal ajax endpoint")
 		return nil, err
 	}
 
@@ -96,7 +108,7 @@ func (s *EventService) GetEventsForSocID(socID string) ([]models.Event, error) {
 // Here we're gettings the eventDetailsIDs and contacting the Socs Poral to get
 // details on every event. The idea then is to save them to the database so we're
 // not annoying Socs Portal every time we want to find out about our events.
-func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]models.EventDetails, error) {
+func (s *SocietiesPortalService) GetAllEventsDetails(eventDetailIDs []int) (map[int]models.EventDetails, error) {
 	/*
 		A response from the societies portal will look like this:
 		[
@@ -131,9 +143,9 @@ func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]models
 
 	eventsDetails := map[int]models.EventDetails{}
 	for _, eventDetailsID := range eventDetailIDs {
-		req, err := http.NewRequest("GET", s.Endpoint, nil)
+		req, err := http.NewRequest("GET", s.AjaxEndpoint, nil)
 		if err != nil {
-			log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal endpoint")
+			log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal ajax endpoint")
 			return nil, err
 		}
 
@@ -163,10 +175,10 @@ func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]models
 	return eventsDetails, nil
 }
 
-func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]models.Event, error) {
-	req, err := http.NewRequest("GET", s.Endpoint, nil)
+func (s *SocietiesPortalService) GetAllEvents(onlyUpcomingEvents bool) ([]models.Event, error) {
+	req, err := http.NewRequest("GET", s.AjaxEndpoint, nil)
 	if err != nil {
-		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal endpoint")
+		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal ajaxendpoint")
 		return nil, err
 	}
 
@@ -217,4 +229,50 @@ func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]models.Event, er
 	}
 
 	return eventsWeWant, nil
+}
+
+func (s *SocietiesPortalService) GetMemberFromSocietiesPortal(memberID string) (*models.SocietyMember, error) {
+
+	req, err := http.NewRequest("GET", s.WebservicesEndpoint, nil)
+	if err != nil {
+		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal webservices endpoint")
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Add("method", b64.StdEncoding.EncodeToString([]byte(s.WebservicesMemberServiceMethodIndividual)))
+	q.Add("username", b64.StdEncoding.EncodeToString([]byte(s.WebservicesUsername)))
+	q.Add("password", b64.StdEncoding.EncodeToString([]byte(s.WebservicesPassword)))
+	q.Add("searchByOption", b64.StdEncoding.EncodeToString([]byte(s.WebservicesMemberServiceSearchByOption)))
+	q.Add("searchValue", b64.StdEncoding.EncodeToString([]byte(memberID)))
+	q.Add("encodeOutput", b64.StdEncoding.EncodeToString([]byte("true")))
+	req.URL.RawQuery = q.Encode()
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.WithField("error", err.Error()).Warn("Could not make a request to SocsPortal endpoint")
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	data := map[string]string{}
+	err = json.NewDecoder(res.Body).Decode(&data)
+	if err != nil {
+		log.WithField("error", err.Error()).Warn("Could not decode JSON response from Socs Portal into interface")
+		return nil, err
+	}
+
+	if data["member"] == "No user found" {
+		return nil, nil
+	}
+
+	// Now we can decode into our struct
+	member := models.SocietyMember{}
+	err = json.NewDecoder(res.Body).Decode(&data)
+	if err != nil {
+		log.WithField("error", err.Error()).Warn("Could not decode JSON response from Socs Portal into SocietyMember struct")
+		return nil, err
+	}
+
+	return &member, nil
 }

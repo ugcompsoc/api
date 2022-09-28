@@ -1,5 +1,14 @@
 package models
 
+type SocietyMember struct {
+	MemberTypeTitle string `json:"MemberTypeTitle"`
+	MemberID        string `json:"MemberID"`
+	FirstName       string `json:"FirstName"`
+	LastName        string `json:"LastName"`
+	Email           string `json:"Email"`
+	PhoneNumber     string `json:"PhoneNumber"`
+}
+
 type Event struct {
 	EventDetailsID    int    `json:"eventDetailsID"`
 	EventID           int    `json:"eventID"`

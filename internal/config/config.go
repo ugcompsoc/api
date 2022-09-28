@@ -47,11 +47,17 @@ type Config struct {
 	}
 
 	SocsPortal struct {
-		Endpoint                     string `mapstructure:"endpoint"`
-		EventService                 string `mapstructure:"event_service"`
-		EventServiceMethodIndividual string `mapstructure:"event_service_method_individual"`
-		EventServiceMethodAll        string `mapstructure:"event_service_method_all"`
-		EventServiceAction           string `mapstructure:"event_service_action"`
+		WebservicesEndpoint                      string `mapstructure:"webservices_endpoint"`
+		AjaxEndpoint                             string `mapstructure:"ajax_endpoint"`
+		WebservicesUsername                      string `mapstructure:"webservices_username"`
+		WebservicesPassword                      string `mapstructure:"webservices_password"`
+		WebservicesMemberServiceMethodIndividual string `mapstructure:"webservices_member_service_method_individual"`
+		WebservicesMemberServiceMethodAll        string `mapstructure:"webservices_member_service_method_all"`
+		WebservicesMemberServiceSearchByOption   string `mapstructure:"webservices_member_service_search_by_option"`
+		EventService                             string `mapstructure:"event_service"`
+		EventServiceMethodIndividual             string `mapstructure:"event_service_method_individual"`
+		EventServiceMethodAll                    string `mapstructure:"event_service_method_all"`
+		EventServiceAction                       string `mapstructure:"event_service_action"`
 	}
 }
 
