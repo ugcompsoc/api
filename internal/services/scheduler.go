@@ -19,7 +19,7 @@ type SchedulerService struct {
 func (s *SchedulerService) DoGetAllEvents() {
 	log.Info("Starting doGetAllEvents Task")
 
-	eventService := NewEventService(s.Config)
+	eventService := NewEventService(s.Config, s.Datastore)
 
 	var allEvents []models.Event
 	var err error

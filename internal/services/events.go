@@ -15,6 +15,7 @@ import (
 )
 
 type EventService struct {
+	Datastore                    *MongoDatastore
 	Endpoint                     string
 	EventService                 string
 	EventServiceMethodAll        string
@@ -22,8 +23,9 @@ type EventService struct {
 	EventServiceAction           string
 }
 
-func NewEventService(config *config.Config) *EventService {
+func NewEventService(config *config.Config, datastore *MongoDatastore) *EventService {
 	return &EventService{
+		Datastore:                    datastore,
 		Endpoint:                     config.SocsPortal.Endpoint,
 		EventService:                 config.SocsPortal.EventService,
 		EventServiceMethodAll:        config.SocsPortal.EventServiceMethodAll,
@@ -162,8 +164,6 @@ func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]models
 }
 
 func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]models.Event, error) {
-	socIDs := []int{30, 484}
-
 	req, err := http.NewRequest("GET", s.Endpoint, nil)
 	if err != nil {
 		log.WithField("error", err.Error()).Warn("Could not create a request to SocsPortal endpoint")
@@ -195,6 +195,18 @@ func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]models.Event, er
 	if err != nil {
 		log.WithField("error", err.Error()).Warn("Could not decode JSON response from Socs Portal into interface")
 		return nil, err
+	}
+
+	societies, err := s.Datastore.GetAllSocieties()
+	if err != nil {
+		return nil, err
+	}
+
+	socIDs := make([]int, len(societies))
+	index := 0
+	for _, society := range societies {
+		socIDs[index] = int(society.SocietiesPortalID)
+		index++
 	}
 
 	eventsWeWant := []models.Event{}
