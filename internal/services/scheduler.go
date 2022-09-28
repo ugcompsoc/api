@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/nuigcompsoc/api/internal/config"
+	"github.com/nuigcompsoc/api/internal/models"
 
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ func (s *SchedulerService) DoGetAllEvents() {
 
 	eventService := NewEventService(s.Config)
 
-	var allEvents []Event
+	var allEvents []models.Event
 	var err error
 
 	// Once an hour we want to update all events (past and upcoming)
@@ -48,7 +49,7 @@ func (s *SchedulerService) DoGetAllEvents() {
 		return
 	}
 
-	allEventsWithEventDetails := []EventDetails{}
+	allEventsWithEventDetails := []models.EventDetails{}
 	for _, event := range allEvents {
 		eventWithEventDetails := allEventDetails[event.EventDetailsID]
 		eventWithEventDetails.EventID = event.EventID

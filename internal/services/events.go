@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/nuigcompsoc/api/internal/config"
+	"github.com/nuigcompsoc/api/internal/models"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 )
@@ -18,49 +20,6 @@ type EventService struct {
 	EventServiceMethodAll        string
 	EventServiceMethodIndividual string
 	EventServiceAction           string
-}
-
-type Event struct {
-	EventDetailsID    int    `json:"eventDetailsID"`
-	EventID           int    `json:"eventID"`
-	Title             string `json:"title"`
-	DescriptionAbbrev string `json:"descriptionAbbrev"`
-	OwnerTitle        string `json:"ownerTitle"`
-	Start             string `json:"start"`
-	End               string `json:"end"`
-	LocationDetails   string `json:"locationDetails"`
-	OwnerID           int    `json:"ownerID"`
-	AllDay            bool   `json:"allDay"`
-	Icon              string `json:"icon"`
-	EventLocationType string `json:"eventLocationType"`
-	ClassName         string `json:"className"`
-}
-
-type EventDetails struct {
-	EventDetailsID         int    `json:"eventDetailsID" bson:"eventDetailsID"`
-	EventID                int    `json:"eventID" bson:"eventID"`
-	Title                  string `json:"title" bson:"title"`
-	DescriptionHTML        string `json:"descriptionHTML" bson:"descriptionHTML"`
-	Description            string `json:"description" bson:"description"`
-	EventTypeTitle         string `json:"eventTypeTitle" bson:"eventTypeTitle"`
-	Start                  string `json:"start" bson:"start"`
-	End                    string `json:"end" bson:"end"`
-	LocationDetails        string `json:"locationDetails" bson:"locationDetails"`
-	StartDateTimeFormatted string `json:"startDateTimeFormatted" bson:"startDateTimeFormatted"`
-	OwnerID                int    `json:"ownerID" bson:"ownerID"`
-	OwnerTitle             string `json:"ownerTitle" bson:"ownerTitle"`
-	AllDay                 bool   `json:"allDay" bson:"allDay"`
-	EventLocationGroupID   int    `json:"eventLocationGroupID" bson:"eventLocationGroupID"`
-	Tags                   string `json:"tags" bson:"tags"`
-	LocationTypeTitle      string `json:"locationTypeTitle" bson:"locationTypeTitle"`
-	StatusTypeTitle        string `json:"statusTypeTitle" bson:"statusTypeTitle"`
-	SignUpUrl              string `json:"signUpUrl" bson:"signUpUrl"`
-	Icon                   string `json:"icon" bson:"icon"`
-	EventLocationType      string `json:"eventLocationType" bson:"eventLocationType"`
-	ClassName              string `json:"className" bson:"className"`
-	EventUrl               string `json:"eventUrl" bson:"eventUrl"`
-	EventReadUrl           string `json:"eventReadUrl" bson:"eventReadUrl"`
-	EventICalUrl           string `json:"eventICalUrl" bson:"eventICalUrl"`
 }
 
 func NewEventService(config *config.Config) *EventService {
@@ -78,7 +37,7 @@ func NewEventService(config *config.Config) *EventService {
 // details anyways. So we've to contact the Socs Portal again on a seperate
 // API for every eventID we get. This function just returns an array of
 // eventDetailsIDs as strings.
-func (s *EventService) GetEventsForSocID(socID string) ([]Event, error) {
+func (s *EventService) GetEventsForSocID(socID string) ([]models.Event, error) {
 	/*
 		A response from the societies portal will look like this:
 		[
@@ -122,7 +81,7 @@ func (s *EventService) GetEventsForSocID(socID string) ([]Event, error) {
 	}
 	defer res.Body.Close()
 
-	var data []Event
+	var data []models.Event
 	err = json.NewDecoder(res.Body).Decode(&data)
 	if err != nil {
 		log.WithField("error", err.Error()).Warn("Could not decode JSON response from Socs Portal into interface")
@@ -135,7 +94,7 @@ func (s *EventService) GetEventsForSocID(socID string) ([]Event, error) {
 // Here we're gettings the eventDetailsIDs and contacting the Socs Poral to get
 // details on every event. The idea then is to save them to the database so we're
 // not annoying Socs Portal every time we want to find out about our events.
-func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]EventDetails, error) {
+func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]models.EventDetails, error) {
 	/*
 		A response from the societies portal will look like this:
 		[
@@ -168,7 +127,7 @@ func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]EventD
 		]
 	*/
 
-	eventsDetails := map[int]EventDetails{}
+	eventsDetails := map[int]models.EventDetails{}
 	for _, eventDetailsID := range eventDetailIDs {
 		req, err := http.NewRequest("GET", s.Endpoint, nil)
 		if err != nil {
@@ -190,7 +149,7 @@ func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]EventD
 		}
 		defer res.Body.Close()
 
-		data := []EventDetails{}
+		data := []models.EventDetails{}
 		err = json.NewDecoder(res.Body).Decode(&data)
 		if err != nil {
 			log.WithField("error", err.Error()).Warn("Could not decode JSON response from Socs Portal into interface")
@@ -202,7 +161,7 @@ func (s *EventService) GetAllEventsDetails(eventDetailIDs []int) (map[int]EventD
 	return eventsDetails, nil
 }
 
-func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]Event, error) {
+func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]models.Event, error) {
 	socIDs := []int{30, 484}
 
 	req, err := http.NewRequest("GET", s.Endpoint, nil)
@@ -231,14 +190,14 @@ func (s *EventService) GetAllEvents(onlyUpcomingEvents bool) ([]Event, error) {
 	}
 	defer res.Body.Close()
 
-	events := []Event{}
+	events := []models.Event{}
 	err = json.NewDecoder(res.Body).Decode(&events)
 	if err != nil {
 		log.WithField("error", err.Error()).Warn("Could not decode JSON response from Socs Portal into interface")
 		return nil, err
 	}
 
-	eventsWeWant := []Event{}
+	eventsWeWant := []models.Event{}
 	for _, event := range events {
 		if slices.Contains(socIDs, event.OwnerID) {
 			eventsWeWant = append(eventsWeWant, event)
