@@ -1,0 +1,33 @@
+log_level: TRACE
+timeouts:
+  startup: 30s
+  shutdown: 30s
+http:
+  listen_address: ':8080'
+  cors:
+    allowed_origins: ['*']
+database:
+  host: 'mongodb+srv://URL'
+  name: 'DATABASE-NAME'
+  username: 'DATABASE-USERNAME'
+  password: 'DATABASE-PASSWORD'
+ldap:
+  url: 'ldaps://127.0.0.1:10636'
+  bind: 'cn=admin,dc=compsoc,dc=ie'
+  password: 'EatMyShorts'
+  user_search_base: 'ou=people,dc=compsoc,dc=ie'
+  society_search_base: 'ou=societies,dc=compsoc,dc=ie'
+  group_search_base: 'ou=groups,dc=compsoc,dc=ie'
+  search_base: 'dc=compsoc,dc=ie'
+socsportal:
+  webservices_endpoint: 'SOCS-PORTAL-WEBSERVICES-ENDPOINT'
+	ajax_endpoint: 'SOCS-PORTAL-AJAX-ENDPOINT'
+	webservices_username: 'SOCS-PORTAL-WEBSERVICES-USERNAME'
+	webservices_password: 'SOCS-PORTAL-WEBSERVICES-PASSWORD'
+	webservices_member_service_method_individual: 'SOCS-PORTAL-WEBSERVICES-MEMBER-SERVICE-INDIVIDUAL'
+	webservices_member_service_method_all: 'SOCS-PORTAL-WEBSERVICES-MEMBER-SERVICE-ALL'
+	webservices_member_service_search_by_option: 'SOCS-PORTAL-WEBSERVICES-SEARCH-BY-OPTION'
+  event_service: 'SOCS-PORTAL-AJAX-EVENT-SERVICE'
+  event_service_method_individual: 'SOCS-PORTAL-AJAX-EVENT-SERVICE-METHOD-INDIVIDUAL'
+  event_service_method_all: 'SOCS-PORTAL-AJAX-EVENT-SERVICE-METHOD-ALL'
+  event_service_action: 'SOCS-PORTAL-AJAX-EVENT-SERVICE-ACTION'

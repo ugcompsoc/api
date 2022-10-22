@@ -17,3 +17,6 @@
 # Any chicken scratches file
 *test*
 *tbc*
+
+# Config files
+api.yml
