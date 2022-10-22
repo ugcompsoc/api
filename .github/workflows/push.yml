@@ -58,12 +58,12 @@ jobs:
     if: startsWith(github.ref, 'refs/tags')
     steps:
       - name: Deploy To Prod
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_SECRET }}
-        port: ${{ secrets.SSH_PORT }}
-        script: |
-          cd ~/api
-          ./deploy/deploy-prod.sh ${{steps.version_step.outputs.version}}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_SECRET }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ~/api
+            ./deploy/deploy-prod.sh ${{steps.version_step.outputs.version}}
