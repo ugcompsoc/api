@@ -3,6 +3,7 @@ package services
 import (
 	b64 "encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -95,6 +96,12 @@ func (s *SocietiesPortalService) GetEventsForSocID(socID string) ([]models.Event
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode != http.StatusOK {
+		err := errors.New("Socs Portal is not returning a status Ok (200)")
+		log.Warn("error: ", err.Error())
+		return nil, err
+	}
+
 	var data []models.Event
 	err = json.NewDecoder(res.Body).Decode(&data)
 	if err != nil {
@@ -163,6 +170,12 @@ func (s *SocietiesPortalService) GetAllEventsDetails(eventDetailIDs []int) (map[
 		}
 		defer res.Body.Close()
 
+		if res.StatusCode != http.StatusOK {
+			err := errors.New("Socs Portal is not returning a status Ok (200)")
+			log.Warn("error: ", err.Error())
+			return nil, err
+		}
+
 		data := []models.EventDetails{}
 		err = json.NewDecoder(res.Body).Decode(&data)
 		if err != nil {
@@ -201,6 +214,12 @@ func (s *SocietiesPortalService) GetAllEvents(onlyUpcomingEvents bool) ([]models
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		err := errors.New("Socs Portal is not returning a status Ok (200)")
+		log.Warn("error: ", err.Error())
+		return nil, err
+	}
 
 	events := []models.Event{}
 	err = json.NewDecoder(res.Body).Decode(&events)

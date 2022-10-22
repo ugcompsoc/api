@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+var version = "dev"
 var srv *server.Server
 
 func init() {
