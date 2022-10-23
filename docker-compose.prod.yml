@@ -1,0 +1,18 @@
+
+version: '3'
+services: 
+  compsoc-api:
+    image: ugcompsoc/api:${API_VERSION}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-compsoc-ie.rule=Host(`api.compsoc.ie`)"
+      - "traefik.http.routers.api-compsoc-ie.entrypoints=websecure"
+      - "traefik.http.routers.api-compsoc-ie.tls=true"
+      - "traefik.docker.network=transit-public"
+      - "traefik.http.routers.api-compsoc-ie.tls.certresolver=myresolver"
+    networks:
+      - transit-public
+
+networks:
+  transit-public:
+    external: true
