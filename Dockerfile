@@ -1,12 +1,18 @@
-FROM golang:1.16.4-buster AS builder
+FROM golang:1.18.7-buster AS builder
 
 ARG VERSION=dev
 
 WORKDIR /go/src/app
-COPY cmd/main.go .
-RUN go build -o main -ldflags=-X=main.version=${VERSION} main.go 
+COPY go.* ./
+RUN go mod download
+
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+RUN mkdir bin/ && go build -o bin/ -ldflags=-X=main.version=${VERSION} ./cmd/...
 
 FROM debian:buster-slim
-COPY --from=builder /go/src/app/main /go/bin/main
-ENV PATH="/go/bin:${PATH}"
-CMD ["main"]
+
+COPY --from=builder /go/src/app/bin/cmd /go/bin/api
+
+EXPOSE 80/tcp
+ENTRYPOINT ["/go/bin/api"]
