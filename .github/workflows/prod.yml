@@ -26,6 +26,7 @@ jobs:
           echo "##[set-output name=version;]VERSION=${GITHUB_REF#$"refs/tags/v"}"
           echo "##[set-output name=version_tag;]$GITHUB_REPOSITORY:${GITHUB_REF#$"refs/tags/v"}"
           echo "##[set-output name=latest_tag;]$GITHUB_REPOSITORY:latest"
+          echo "##[set-output name=stable_tag;]$GITHUB_REPOSITORY:stable"
       
       - name: Print Version
         run: |
@@ -49,6 +50,7 @@ jobs:
         run: |
           echo VERSION_TAG=$(echo ${{ steps.version_step.outputs.version_tag }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
           echo LASTEST_TAG=$(echo ${{ steps.version_step.outputs.latest_tag  }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+          echo STABLE_TAG=$(echo ${{ steps.version_step.outputs.stable_tag  }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
       
       - name: Build and push
         id: docker_build
@@ -58,6 +60,7 @@ jobs:
           tags: |
             ${{env.VERSION_TAG}}
             ${{env.LASTEST_TAG}}
+            ${{env.STABLE_TAG}}
           build-args: |
             ${{steps.version_step.outputs.version}}
   
@@ -75,4 +78,4 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ~/api
-            ./deploy/deploy-prod.sh ${GITHUB_REF:11:10}
+            ./deploy/deploy-prod.sh

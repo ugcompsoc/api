@@ -2,7 +2,7 @@
 version: '3'
 services: 
   compsoc-api:
-    image: ugcompsoc/api:${API_VERSION}
+    image: ugcompsoc/api:stable
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api-compsoc-ie.rule=Host(`api.compsoc.ie`)"
