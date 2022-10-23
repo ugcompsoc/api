@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Change version of API
-if $1 -eq ""
+if [ ! -z "$1" ]
 then
     exit 1
 fi
