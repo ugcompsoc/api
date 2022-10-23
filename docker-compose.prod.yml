@@ -10,6 +10,8 @@ services:
       - "traefik.http.routers.api-compsoc-ie.tls=true"
       - "traefik.docker.network=transit-public"
       - "traefik.http.routers.api-compsoc-ie.tls.certresolver=myresolver"
+    volumes:
+      - ./api.yml:/run/config/api.yml
     networks:
       - transit-public
 
