@@ -31,7 +31,7 @@ jobs:
         with:
           push: true
           tags: |
-            $GITHUB_REPOSITORY:latest
+            "${{GITHUB_REPOSITORY}}:latest"
   
   deploy-staging-api:
     runs-on: ubuntu-latest
