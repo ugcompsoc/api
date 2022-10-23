@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run Unit Tests
-        run: go test ./tests/
+        run: go test -v ./...
 
   deploy-image:
     runs-on: ubuntu-latest
