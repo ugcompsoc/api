@@ -75,4 +75,4 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ~/api
-            ./deploy/deploy-prod.sh ${{steps.version_step.outputs.version}}
+            ./deploy/deploy-prod.sh ${{env.VERSION_TAG}}
