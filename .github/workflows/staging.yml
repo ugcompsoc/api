@@ -33,7 +33,7 @@ jobs:
           tags: |
             $GITHUB_REPOSITORY:latest
   
-    deploy-staging-api:
+  deploy-staging-api:
     runs-on: ubuntu-latest
     needs: deploy-staging-image
     steps:
