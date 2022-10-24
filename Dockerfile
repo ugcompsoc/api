@@ -10,8 +10,9 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 RUN mkdir bin/ && go build -o bin/ -ldflags=-X=main.version=${VERSION} ./cmd/...
 
-FROM debian:buster
+FROM debian:buster-slim
 
+RUN apt update && apt-get install -y ca-certificates && update-ca-certificates
 COPY --from=builder /go/src/app/bin/cmd /go/bin/api
 
 EXPOSE 80/tcp

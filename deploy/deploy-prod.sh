@@ -4,6 +4,9 @@
 echo -e "\n > Shutting down CompSoc API"
 docker-compose -f docker-compose.prod.yml down
 
+# Update image
+docker-compose pull
+
 # Pull down any new workflow related stuff
 echo -e "\n > Pulling down new updates from main"
 git checkout main
@@ -11,4 +14,4 @@ git pull
 
 # Start the service again
 echo -e "\n > Starting CompSoc API"
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.yml up -d --remove-orphans
