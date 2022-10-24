@@ -61,7 +61,7 @@ func connectToMongo(config *config.Config) (a *mongo.Database, b *mongo.Client) 
 	}
 	session, err := mongo.NewClient(options.Client().ApplyURI(config.Database.Host).SetAuth(credential))
 	if err != nil {
-		log.Warn("Failed to connect to Database Host")
+		log.WithField("error", err).Warn("Failed to connect to Database Host")
 		return nil, nil
 	}
 
@@ -69,13 +69,13 @@ func connectToMongo(config *config.Config) (a *mongo.Database, b *mongo.Client) 
 	defer cancel()
 	err = session.Connect(ctx)
 	if err != nil {
-		log.Warn("Failed to create session with Database Host")
+		log.WithField("error", err).Warn("Failed to create session with Database Host")
 		return nil, nil
 	}
 
 	err = session.Ping(ctx, nil)
 	if err != nil {
-		log.Warn("Failed to ping the Database Host")
+		log.WithField("error", err).Warn("Failed to ping the Database Host")
 		return nil, nil
 	}
 
