@@ -10,7 +10,7 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 RUN mkdir bin/ && go build -o bin/ -ldflags=-X=main.version=${VERSION} ./cmd/...
 
-FROM debian:buster-slim
+FROM debian:buster
 
 COPY --from=builder /go/src/app/bin/cmd /go/bin/api
 
