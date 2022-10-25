@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"html"
 	"sync"
 	"time"
 
@@ -154,16 +153,13 @@ func (ds *MongoDatastore) GetSocietyBySocietyName(societyName string) (*models.S
 /*
  *	Event Database Helpers
  */
-func (ds *MongoDatastore) UpsertEvents(events []models.EventDetails) error {
+func (ds *MongoDatastore) UpsertEvents(events []models.DatabaseEvent) error {
 
 	writeModels := []mongo.WriteModel{}
 	for _, event := range events {
-		// TODO should verify if html is already escaped
-		// already escaped event.DescriptionHTML = html.EscapeString(event.DescriptionHTML)
-		event.StartDateTimeFormatted = html.EscapeString(event.StartDateTimeFormatted)
 		writeModels = append(writeModels,
 			mongo.NewUpdateOneModel().SetFilter(
-				bson.M{"eventID": event.EventID, "eventDetailsID": event.EventDetailsID}).SetUpdate(
+				bson.M{"event_id": event.EventID, "event_details_id": event.EventDetailsID}).SetUpdate(
 				bson.D{{Key: "$set", Value: event}}).SetUpsert(true))
 	}
 	opts := options.BulkWrite().SetOrdered(false)
@@ -205,12 +201,12 @@ func (ds *MongoDatastore) GetAllEvents() ([]models.EventDetails, error) {
 	return events, nil
 }
 
-func (ds *MongoDatastore) GetAllUpcomingEvents() ([]models.EventDetails, error) {
+func (ds *MongoDatastore) GetAllUpcomingEvents() ([]models.DatabaseEvent, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Find upcoming events, but also include events that ended at most an hour ago
-	cursor, err := ds.db.Collection("events").Find(ctx, bson.M{"end": bson.M{
+	cursor, err := ds.db.Collection("events").Find(ctx, bson.M{"end_datetime": bson.M{
 		"$gte": time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
 	}})
 	if err != nil {
@@ -218,7 +214,7 @@ func (ds *MongoDatastore) GetAllUpcomingEvents() ([]models.EventDetails, error) 
 		return nil, err
 	}
 
-	events := []models.EventDetails{}
+	events := []models.DatabaseEvent{}
 	err = cursor.All(ctx, &events)
 	if err != nil {
 		log.WithField("error", err).Warn("Failed to use cursor to find all documents that are upcoming in events collection")
@@ -228,12 +224,12 @@ func (ds *MongoDatastore) GetAllUpcomingEvents() ([]models.EventDetails, error) 
 	return events, nil
 }
 
-func (ds *MongoDatastore) GetAllPastEvents() ([]models.EventDetails, error) {
+func (ds *MongoDatastore) GetAllPastEvents() ([]models.DatabaseEvent, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Find past events, but also not including events that ended at most an hour ago
-	cursor, err := ds.db.Collection("events").Find(ctx, bson.M{"end": bson.M{
+	cursor, err := ds.db.Collection("events").Find(ctx, bson.M{"end_datetime": bson.M{
 		"$lt": time.Now().UTC().Add(-time.Hour).Format(time.RFC3339),
 	}})
 	if err != nil {
@@ -241,7 +237,7 @@ func (ds *MongoDatastore) GetAllPastEvents() ([]models.EventDetails, error) {
 		return nil, err
 	}
 
-	events := []models.EventDetails{}
+	events := []models.DatabaseEvent{}
 	err = cursor.All(ctx, &events)
 	if err != nil {
 		log.WithField("error", err).Warn("Failed to use cursor to find all documents that are past in events collection")
@@ -252,24 +248,24 @@ func (ds *MongoDatastore) GetAllPastEvents() ([]models.EventDetails, error) {
 }
 
 // TODO Theres a bug in here somewhere relating to recent (within an hour) events not showing up
-func (ds *MongoDatastore) GetAllUpcomingEventsForSocID(socID int) ([]models.EventDetails, error) {
+func (ds *MongoDatastore) GetAllUpcomingEventsForSocID(socID int) ([]models.DatabaseEvent, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Find upcoming events for society, but also include events that ended at most an hour ago
 	cursor, err := ds.db.Collection("events").Find(ctx,
 		bson.M{
-			"end": bson.M{
+			"end_datetime": bson.M{
 				"$gte": time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
 			},
-			"ownerID": socID,
+			"society_id": socID,
 		})
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "socID": socID}).Warn("Failed to return cursor to find all documents for society that are upcoming in events collection")
 		return nil, err
 	}
 
-	events := []models.EventDetails{}
+	events := []models.DatabaseEvent{}
 	err = cursor.All(ctx, &events)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "socID": socID}).Warn("Failed to use cursor to find all documents for society that are upcoming in events collection")
@@ -279,24 +275,24 @@ func (ds *MongoDatastore) GetAllUpcomingEventsForSocID(socID int) ([]models.Even
 	return events, nil
 }
 
-func (ds *MongoDatastore) GetAllPastEventsForSocID(socID int) ([]models.EventDetails, error) {
+func (ds *MongoDatastore) GetAllPastEventsForSocID(socID int) ([]models.DatabaseEvent, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Find past events for society, but also not including events that ended at most an hour ago
 	cursor, err := ds.db.Collection("events").Find(ctx,
 		bson.M{
-			"end": bson.M{
+			"end_datetime": bson.M{
 				"$lt": time.Now().UTC().Add(-time.Hour).Format(time.RFC3339),
 			},
-			"ownerID": socID,
+			"society_id": socID,
 		})
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "socID": socID}).Warn("Failed to return cursor to find all documents for society that are passed in events collection")
 		return nil, err
 	}
 
-	events := []models.EventDetails{}
+	events := []models.DatabaseEvent{}
 	err = cursor.All(ctx, &events)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "socID": socID}).Warn("Failed to use cursor to find all documents for society that are passed in events collection")

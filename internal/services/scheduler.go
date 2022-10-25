@@ -56,7 +56,13 @@ func (s *SchedulerService) DoGetAllEvents() {
 		allEventsWithEventDetails = append(allEventsWithEventDetails, eventWithEventDetails)
 	}
 
-	err = s.Datastore.UpsertEvents(allEventsWithEventDetails)
+	// convert societies portal events to database events
+	allDatabaseEvents := []models.DatabaseEvent{}
+	for _, event := range allEventsWithEventDetails {
+		allDatabaseEvents = append(allDatabaseEvents, event.ToDatabaseEvent())
+	}
+
+	err = s.Datastore.UpsertEvents(allDatabaseEvents)
 	if err != nil {
 		log.Warn("Datastore.upsertEvents Function Failed")
 		return
